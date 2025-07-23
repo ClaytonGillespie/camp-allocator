@@ -2,38 +2,52 @@
 import polars as pl
 import pulp
 import time
-import pandas as pd
+
+start_time = time.time()
 
 #%% Read and prepare data
-start_time = time.time()
 print("Loading data...")
-not_going = ['Eleanor Clarke','Anthony Bewes']
-people = pl.read_csv("data/people.csv"
-            ).filter(
-                pl.col('Name').is_in(not_going).not_()
-            )
-campers = people.select('Name').to_series().to_list()
+people = pl.read_csv("data/people.csv")
+
+# People not going - add names here
+not_going = [
+    "Eleanor Clarke",
+    "Anthony Bewes"
+]
+
+# Filter out people who are not going
+going_people = people.filter(~pl.col('Name').is_in(not_going))
+not_going_count = len(people) - len(going_people)
+
+if not_going_count > 0:
+    print(f"Excluding {not_going_count} people: {', '.join(not_going)}")
+print(f"People participating: {len(going_people)}")
+
+campers = going_people.select('Name').to_series().to_list()
 
 cars_df = pl.scan_csv('data/cars.csv').with_columns(
     (pl.col('3-point belts (excluding driver)') + 1).alias('seats')
 ).collect()
 cars = cars_df.select('Surname & Car Reg').to_series().to_list()
 
-start_time = time.time()
-
-#%% Get all unique drivers from all driver columns
+# Get all unique drivers from all driver columns, but only those who are going
 all_drivers = []
 for i in range(1, 7):  # Assuming up to 6 driver columns
     driver_col = f'Driver {i}'
     if driver_col in cars_df.columns:
         drivers_from_col = cars_df.select(driver_col).to_series().drop_nulls().to_list()
         all_drivers.extend(drivers_from_col)
-drivers = list(set(all_drivers))
-drivers = [d for d in drivers if d not in not_going]
 
-# Create lookup dictionaries for performance
-camper_to_group = dict(zip(people.select('Name').to_series(), people.select('Dorm').to_series()))
-camper_to_gender = dict(zip(people.select('Name').to_series(), people.select('Sex').to_series()))
+# Only include drivers who are going (exist in going_people)
+going_people_names = going_people.select('Name').to_series().to_list()
+drivers = [d for d in set(all_drivers) if d in going_people_names]
+
+print(f"Total potential drivers: {len(set(all_drivers))}")
+print(f"Available drivers (going): {len(drivers)}")
+
+# Create lookup dictionaries for performance (using only going people)
+camper_to_group = dict(zip(going_people.select('Name').to_series(), going_people.select('Dorm').to_series()))
+camper_to_gender = dict(zip(going_people.select('Name').to_series(), going_people.select('Sex').to_series()))
 car_to_capacity = dict(zip(cars_df.select('Surname & Car Reg').to_series(), 
                           (cars_df.select('seats').to_series() - 1)))
 
@@ -46,11 +60,11 @@ for d in drivers:
         if d in allowed_drivers:
             driver_allowed_cars[d].append(row['Surname & Car Reg'])
 
-# Get groups, leaders, minibus info
-groups = people.select('Dorm').unique().to_series().to_list()
-leaders = people.filter(pl.col('Year') == "L").select('Name').to_series().to_list()
+# Get groups, leaders, minibus info (using only going people)
+groups = going_people.select('Dorm').unique().to_series().to_list()
+leaders = going_people.filter(pl.col('Year') == "L").select('Name').to_series().to_list()
 minibus_cars = cars_df.filter(pl.col('Surname & Car Reg').str.contains('Minibus')).select('Surname & Car Reg').to_series().to_list()
-male_campers = people.filter(pl.col('Sex') == 'M').select('Name').to_series().to_list()
+male_campers = going_people.filter(pl.col('Sex') == 'M').select('Name').to_series().to_list()
 
 print(f"Data loaded: {len(campers)} campers, {len(cars)} cars, {len(drivers)} drivers")
 
@@ -82,14 +96,56 @@ print("Setting up objective function...")
 base_score = 50
 prob += pulp.lpSum([base_score * assign_camper[(c, car)] for c in campers for car in cars])
 
-# Simplified group cohesion - bonus for larger groups in same car
-print("Adding group cohesion bonuses...")
-for group in groups:
-    group_members = people.filter(pl.col('Dorm') == group).select('Name').to_series().to_list()
-    for car in cars:
+# Group homogeneity scoring - reward based on minimum group size in each car
+print("Adding group homogeneity bonuses...")
+
+for car in cars:
+    # Much simpler approach: just give bonuses based on group sizes directly
+    # This avoids all variable multiplication issues
+    
+    capacity = car_to_capacity[car]
+    car_groups_sizes = []
+    
+    for group in groups:
+        group_members = going_people.filter(pl.col('Dorm') == group).select('Name').to_series().to_list()
         group_size_in_car = pulp.lpSum([assign_camper[(member, car)] for member in group_members])
-        # Quadratic bonus for keeping groups together
-        prob += group_size_in_car * 10
+        car_groups_sizes.append(group_size_in_car)
+        
+        # Give quadratic bonus for each group size
+        # This naturally rewards: 2+2 over 3+1, and 4 over everything
+        # 1 person: 1 point, 2 people: 4 points, 3 people: 9 points, 4 people: 16 points
+        
+        # Create binary variables for different group sizes to approximate quadratic scoring
+        for size in range(1, capacity + 1):
+            group_has_size = pulp.LpVariable(f"group_{group}_{car}_has_{size}".replace(' ', '_').replace('(', '').replace(')', '').replace('&', ''), 
+                                           cat='Binary')
+            
+            # If group has exactly this size, give size^2 points
+            # Link: group_has_size = 1 if group_size_in_car >= size
+            prob += group_has_size <= group_size_in_car / size  # If size < size, then group_has_size = 0
+            
+            # Special scoring to prefer 2+2 over 3+1
+            # Size 1: 5 points, Size 2: 50 points, Size 3: 60 points, Size 4: 200 points
+            if size == 1:
+                prob += group_has_size * 5
+            elif size == 2:
+                prob += group_has_size * 50  
+            elif size == 3:
+                prob += group_has_size * 60
+            elif size == 4:
+                prob += group_has_size * 200
+    
+    # Additional bonus for having fewer different groups (encourages consolidation)
+    total_people_in_car = pulp.lpSum([assign_camper[(c, car)] for c in campers])
+    
+    # If car is used, give bonus for group consolidation
+    car_is_used = pulp.LpVariable(f"car_{car}_used".replace(' ', '_').replace('(', '').replace(')', '').replace('&', ''), 
+                                 cat='Binary')
+    prob += car_is_used <= total_people_in_car  # If people > 0, car_is_used can be 1
+    prob += total_people_in_car <= capacity * car_is_used  # If car_is_used = 0, no people
+    
+    # Bonus for using car (encourages filling cars rather than spreading thin)
+    prob += car_is_used * 100
 
 # Leader preference - using auxiliary variables
 print("Adding leader preferences...")
@@ -119,7 +175,7 @@ prob += pulp.lpSum([15 * leader_with_group[(leader, member, car)]
 #%% Add constraints
 print("Adding constraints...")
 
-# Each camper in exactly one car
+# Each camper in exactly one car (unless they're driving)
 print("  - Camper assignment constraints...")
 for c in campers:
     if c in drivers:
@@ -146,7 +202,6 @@ print("  - Driver uniqueness constraints...")
 for d in drivers:
     prob += pulp.lpSum([assign_driver[(d, car)] for car in cars]) <= 1
 
-# NEW SECTION - add after driver uniqueness constraints:
 # People cannot be both driver and passenger (if they're in both lists)
 print("  - Driver/passenger exclusion constraints...")
 for person in drivers:
@@ -191,10 +246,10 @@ print("Starting optimization...")
 solve_start = time.time()
 # Try different solvers in order of preference
 solvers_to_try = [
-    ('PULP_CBC_CMD', lambda: prob.solve(pulp.PULP_CBC_CMD(msg=1, timeLimit=300)))
-    ,('Default', lambda: prob.solve())
-    ,('GLPK', lambda: prob.solve(pulp.GLPK_CMD(msg=1)))
-    ,('COIN_CMD', lambda: prob.solve(pulp.COIN_CMD(msg=1, timeLimit=300)))
+    ('PULP_CBC_CMD', lambda: prob.solve(pulp.PULP_CBC_CMD(msg=1, timeLimit=300))),
+    ('Default', lambda: prob.solve()),
+    ('GLPK', lambda: prob.solve(pulp.GLPK_CMD(msg=1))),
+    ('COIN_CMD', lambda: prob.solve(pulp.COIN_CMD(msg=1, timeLimit=300)))
 ]
 
 solved = False
@@ -248,33 +303,37 @@ for d in drivers:
         if assign_driver[(d, car)].varValue == 1:
             driver_assignments[car] = d
 
-#%%
+#%% Display results
+print("\n" + "="*60)
+print("TRANSPORT ALLOCATION RESULTS")
+print("="*60)
 
-ca_df = pd.DataFrame.from_dict(car_assignments,orient='index')
-da_df = pd.DataFrame.from_dict(driver_assignments,orient='index',columns=['Driver'])
+total_passengers = 0
+for car in sorted(cars):
+    if car in car_assignments and car_assignments[car]:
+        passengers = car_assignments[car]
+        total_passengers += len(passengers)
+        
+        print(f"\n🚗 {car}")
+        print(f"   Driver: {driver_assignments.get(car, '❌ NO DRIVER ASSIGNED')}")
+        print(f"   Passengers ({len(passengers)}):")
+        
+        # Group passengers by dorm for readability
+        passengers_by_group = {}
+        for passenger in passengers:
+            group = camper_to_group.get(passenger, 'Unknown')
+            if group not in passengers_by_group:
+                passengers_by_group[group] = []
+            passengers_by_group[group].append(passenger)
+        
+        for group, members in sorted(passengers_by_group.items()):
+            leader_count = sum(1 for m in members if m in leaders)
+            leader_indicator = f" ({leader_count}L)" if leader_count > 0 else ""
+            print(f"     {group}{leader_indicator}: {', '.join(sorted(members))}")
 
-final = ca_df.join(da_df)
-final = final[['Driver']+final.columns[:-1].tolist()]
-# final.to_csv('latest_transport_allocation_results.csv', index=False)
-print("Results exported to transport_allocation_results.csv")
-final.to_clipboard()
+print(f"\nTotal passengers assigned: {total_passengers}/{len(campers)}")
 
-# SCORE BREAKDOWN:
-#   Base assignment score: 4,100 points
-#   Group cohesion bonus:  820 points
-#   Leader preference bonus: 1,740 points
-#   ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─
-#   TOTAL SCORE:          6,660 points
-
-# 📋 SUMMARY:
-#   Passengers assigned: 82
-#   Cars used: 11
-#   Violations: 0
-
-# ✅ NO VIOLATIONS - Perfect allocation!
-# ============================================================
-
-#%% Validation ######################################
+#%% Validation
 print("\n" + "="*60)
 print("VALIDATION CHECKS")
 print("="*60)
@@ -301,7 +360,6 @@ if unused_cars:
 
 # Check all campers assigned
 unassigned = [c for c in campers if c not in camper_assignments]
-unassigned = [u for u in unassigned if u not in driver_assignments.values()]
 if unassigned:
     print(f"\n❌ UNASSIGNED CAMPERS ({len(unassigned)}):")
     for camper in unassigned:
@@ -344,26 +402,21 @@ for car in minibus_cars:
         if len(leaders_in_car) < 2:
             all_good = False
 
-# Check driver assignments
+# Check driver assignments and driver/passenger conflicts
 print("\n🚗 DRIVER ASSIGNMENT CHECK:")
-driver_passenger_conflicts = []
 driver_car_count = {}
+driver_passenger_conflicts = []
+
 for car, driver in driver_assignments.items():
     if driver not in driver_car_count:
         driver_car_count[driver] = []
     driver_car_count[driver].append(car)
-
+    
+    # Check if driver is also a passenger somewhere
     if driver in camper_assignments:
         passenger_car = camper_assignments[driver]
         driver_passenger_conflicts.append(f"  ❌ {driver} is driving {car} AND passenger in {passenger_car}")
         all_good = False
-    
-    if driver_passenger_conflicts:
-        print("\n❌ DRIVER/PASSENGER CONFLICTS:")
-        for conflict in driver_passenger_conflicts:
-            print(conflict)
-    else:
-        print("  ✅ No driver/passenger conflicts")
 
 for driver, cars_driven in driver_car_count.items():
     if len(cars_driven) > 1:
@@ -371,6 +424,13 @@ for driver, cars_driven in driver_car_count.items():
         all_good = False
     else:
         print(f"  ✅ {driver}: {cars_driven[0]}")
+
+if driver_passenger_conflicts:
+    print("\n❌ DRIVER/PASSENGER CONFLICTS:")
+    for conflict in driver_passenger_conflicts:
+        print(conflict)
+else:
+    print("  ✅ No driver/passenger conflicts")
 
 # Check for cars with passengers but no drivers (this would be a problem)
 cars_needing_drivers = [car for car in car_assignments if car_assignments[car] and car not in driver_assignments]
@@ -410,4 +470,23 @@ else:
 print(f"\nTotal runtime: {time.time() - start_time:.1f} seconds")
 print("="*60)
 
-# %%
+#%% Export results (optional)
+# Uncomment to save results
+"""
+import pandas as pd
+results = []
+for car in car_assignments:
+    for passenger in car_assignments[car]:
+        results.append({
+            'car': car,
+            'driver': driver_assignments.get(car, ''),
+            'passenger': passenger,
+            'group': camper_to_group.get(passenger, ''),
+            'is_leader': passenger in leaders,
+            'gender': camper_to_gender.get(passenger, '')
+        })
+
+results_df = pd.DataFrame(results)
+results_df.to_csv('transport_allocation_results.csv', index=False)
+print("Results exported to transport_allocation_results.csv")
+"""
