@@ -270,7 +270,7 @@ car_assignments = {
 driver_assignments= {
     'Minibus (HX70 BXB)':'Will Clarke'
     ,'Minibus (BL10 EYY)':'Martin Loy'
-    ,'Mininus (BG59 FDJ)':'Paul Montgomery'
+    ,'Minibus (BG59 FDJ)':'Paul Montgomery'
     ,'Weekes (FY13 EZA)':'Robin Weekes'
     ,'Johnson (YA64 FV2)':'Leo Johnson'
     ,'Bewes (FG58 TCU)':'Charlotte Bewes'
