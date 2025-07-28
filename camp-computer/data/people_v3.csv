@@ -1,0 +1,94 @@
+Name,Sex,Dorm,Year,Is Leader
+Martin Loy,M,Martin Loy,L,true
+Rob Jenkins,M,Martin Loy,L,true
+Leo Johnson,M,Martin Loy,L,true
+Martin Loy 1,M,Martin Loy,9,false
+Martin Loy 2,M,Martin Loy,9,false
+Martin Loy 3,M,Martin Loy,9,false
+Martin Loy 4,M,Martin Loy,9,false
+Martin Loy 5,M,Martin Loy,9,false
+Martin Loy 6,M,Martin Loy,9,false
+Martin Loy 7,M,Martin Loy,9,false
+Will Clarke,M,Will Clarke,L,true
+Tom Gardner,M,Will Clarke,L,true
+Jack Shannon,M,Will Clarke,L,true
+Will Clarke 1,M,Will Clarke,10,false
+Will Clarke 2,M,Will Clarke,10,false
+Will Clarke 3,M,Will Clarke,10,false
+Will Clarke 4,M,Will Clarke,10,false
+Will Clarke 5,M,Will Clarke,10,false
+Will Clarke 6,M,Will Clarke,10,false
+Paul Montgomery,M,Paul Montgomery,L,true
+Tom Haley,M,Paul Montgomery,L,true
+James Krammer,M,Paul Montgomery,L,true
+Paul Montgomery 1,M,Paul Montgomery,10,false
+Paul Montgomery 2,M,Paul Montgomery,10,false
+Paul Montgomery 3,M,Paul Montgomery,10,false
+Paul Montgomery 4,M,Paul Montgomery,10,false
+Paul Montgomery 5,M,Paul Montgomery,10,false
+Paul Montgomery 6,M,Paul Montgomery,10,false
+Paul Montgomery 7,M,Paul Montgomery,10,false
+Titus Waldock,M,Titus Waldock,L,true
+John Davies,M,Titus Waldock,L,true
+Tom Bromiley,M,Titus Waldock,L,true
+Titus Waldock 1,M,Titus Waldock,11,false
+Titus Waldock 2,M,Titus Waldock,11,false
+Titus Waldock 3,M,Titus Waldock,11,false
+Titus Waldock 4,M,Titus Waldock,11,false
+Titus Waldock 5,M,Titus Waldock,11,false
+Titus Waldock 6,M,Titus Waldock,11,false
+Titus Waldock 7,M,Titus Waldock,11,false
+Robin Weekes,M,Robin Weekes,L,true
+Johnny Farrar-Bell,M,Robin Weekes,L,true
+Charlie Krammer,M,Robin Weekes,L,true
+Nick Mullins,M,Robin Weekes,L,true
+Robin Weekes 1,M,Robin Weekes,12,false
+Robin Weekes 2,M,Robin Weekes,12,false
+Robin Weekes 3,M,Robin Weekes,12,false
+Robin Weekes 4,M,Robin Weekes,12,false
+Robin Weekes 5,M,Robin Weekes,13,false
+Robin Weekes 6,M,Robin Weekes,13,false
+Robin Weekes 7,M,Robin Weekes,13,false
+Robin Weekes 8,M,Robin Weekes,13,false
+Robin Weekes 9,M,Robin Weekes,13,false
+Charlie Montgomery,F,Charlie Montgomery,L,true
+Alice McCaughern,F,Charlie Montgomery,L,true
+Pip Davies,F,Charlie Montgomery,L,true
+Charlie Montgomery 1,F,Charlie Montgomery,9,false
+Charlie Montgomery 2,F,Charlie Montgomery,9,false
+Charlie Montgomery 3,F,Charlie Montgomery,9,false
+Charlie Montgomery 4,F,Charlie Montgomery,9,false
+Charlie Montgomery 5,F,Charlie Montgomery,9,false
+Charlie Montgomery 6,F,Charlie Montgomery,9,false
+Charlie Montgomery 7,F,Charlie Montgomery,9,false
+Charlie Montgomery 8,F,Charlie Montgomery,9,false
+Charlie Montgomery 9,F,Charlie Montgomery,9,false
+Alice Cornes,F,Alice Cornes,L,true
+Tabby Hill,F,Alice Cornes,L,true
+Hannah Shrives,F,Alice Cornes,L,true
+Alice Cornes 1,F,Alice Cornes,11,false
+Alice Cornes 2,F,Alice Cornes,11,false
+Alice Cornes 3,F,Alice Cornes,11,false
+Alice Cornes 4,F,Alice Cornes,11,false
+Alice Cornes 5,F,Alice Cornes,11,false
+Alice Cornes 6,F,Alice Cornes,11,false
+Alice Cornes 7,F,Alice Cornes,11,false
+Alice Cornes 8,F,Alice Cornes,11,false
+Wendy Loy,F,Wendy Loy,L,true
+Beks Pentland,F,Wendy Loy,L,true
+Emily Williams,F,Wendy Loy,L,true
+Wendy Loy 1,F,Wendy Loy,11,false
+Wendy Loy 2,F,Wendy Loy,11,false
+Wendy Loy 3,F,Wendy Loy,11,false
+Wendy Loy 4,F,Wendy Loy,11,false
+Wendy Loy 5,F,Wendy Loy,11,false
+Wendy Loy 6,F,Wendy Loy,11,false
+Wendy Loy 7,F,Wendy Loy,11,false
+Sophie Cornes,F,Sophie Cornes,L,true
+Charlotte Bewes,F,Sophie Cornes,L,true
+Paget Thomas,F,Sophie Cornes,L,true
+Sophie Cornes 1,F,Sophie Cornes,12,false
+Sophie Cornes 2,F,Sophie Cornes,12,false
+Sophie Cornes 3,F,Sophie Cornes,12,false
+Sophie Cornes 4,F,Sophie Cornes,12,false
+Sophie Cornes 5,F,Sophie Cornes,12,false

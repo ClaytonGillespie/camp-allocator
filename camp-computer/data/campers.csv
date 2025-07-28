@@ -1,0 +1,94 @@
+Name,Sex,Dorm,Year,Is Leader,Real Name
+Martin Loy,M,Martin Loy,L,TRUE,Martin Loy
+Rob Jenkins,M,Martin Loy,L,TRUE,Rob Jenkins
+Leo Johnson,M,Martin Loy,L,TRUE,Leo Johnson
+Martin Loy 1,M,Martin Loy,9,FALSE,Jonah Anderson
+Martin Loy 2,M,Martin Loy,9,FALSE,Frazer Ashton
+Martin Loy 3,M,Martin Loy,9,FALSE,Samuel Holliday
+Martin Loy 4,M,Martin Loy,9,FALSE,Brandon Howell
+Martin Loy 5,M,Martin Loy,9,FALSE,Harry Telfer
+Martin Loy 6,M,Martin Loy,9,FALSE,Will Thompson
+Martin Loy 7,M,Martin Loy,9,FALSE,Milan Zhou
+Will Clarke,M,Will Clarke,L,TRUE,Will Clarke
+Tom Gardner,M,Will Clarke,L,TRUE,Tom Gardner
+Jack Shannon,M,Will Clarke,L,TRUE,Jack Shannon
+Will Clarke 1,M,Will Clarke,10,FALSE,Oliver Badger
+Will Clarke 2,M,Will Clarke,10,FALSE,Rupert Fletcher
+Will Clarke 3,M,Will Clarke,10,FALSE,Sam Jones
+Will Clarke 4,M,Will Clarke,10,FALSE,George Mawby
+Will Clarke 5,M,Will Clarke,10,FALSE,Finn Thomas
+Will Clarke 6,M,Will Clarke,10,FALSE,Ben Youlten
+Paul Montgomery,M,Paul Montgomery,L,TRUE,Paul Montgomery
+Tom Haley,M,Paul Montgomery,L,TRUE,Tom Haley
+James Krammer,M,Paul Montgomery,L,TRUE,James Krammer
+Paul Montgomery 1,M,Paul Montgomery,10,FALSE,Harry Bewes
+Paul Montgomery 2,M,Paul Montgomery,10,FALSE,Tom Bowen
+Paul Montgomery 3,M,Paul Montgomery,10,FALSE,Toby Bromiley
+Paul Montgomery 4,M,Paul Montgomery,10,FALSE,Joshua McCann
+Paul Montgomery 5,M,Paul Montgomery,10,FALSE,Jack Nelson
+Paul Montgomery 6,M,Paul Montgomery,10,FALSE,Oscar Runham
+Paul Montgomery 7,M,Paul Montgomery,10,FALSE,Yang-Yang Guo
+Titus Waldock,M,Titus Waldock,L,TRUE,Titus Waldock
+John Davies,M,Titus Waldock,L,TRUE,John Davies
+Tom Bromiley,M,Titus Waldock,L,TRUE,Tom Bromiley
+Titus Waldock 1,M,Titus Waldock,11,FALSE,Jola Akin-Olugbade
+Titus Waldock 2,M,Titus Waldock,11,FALSE,Kiki Akin-Olugbade
+Titus Waldock 3,M,Titus Waldock,11,FALSE,Alex Boyd
+Titus Waldock 4,M,Titus Waldock,11,FALSE,George Chetwood
+Titus Waldock 5,M,Titus Waldock,11,FALSE,Jasper Cliffe
+Titus Waldock 6,M,Titus Waldock,11,FALSE,Sam Edwards
+Titus Waldock 7,M,Titus Waldock,11,FALSE,William Reeve
+Robin Weekes,M,Robin Weekes,L,TRUE,Robin Weekes
+Johnny Farrar-Bell,M,Robin Weekes,L,TRUE,Johnny Farrar-Bell
+Charlie Krammer,M,Robin Weekes,L,TRUE,Charlie Krammer
+Nick Mullins,M,Robin Weekes,L,TRUE,Nick Mullins
+Robin Weekes 1,M,Robin Weekes,12,FALSE,Wilf Edwards
+Robin Weekes 2,M,Robin Weekes,12,FALSE,Thomas Griffiths
+Robin Weekes 3,M,Robin Weekes,12,FALSE,Jonathan Miles
+Robin Weekes 4,M,Robin Weekes,12,FALSE,Jack Youlten
+Robin Weekes 5,M,Robin Weekes,13,FALSE,Jessy Banzoulou
+Robin Weekes 6,M,Robin Weekes,13,FALSE,Ed Bewes
+Robin Weekes 7,M,Robin Weekes,13,FALSE,Sam Bradley
+Robin Weekes 8,M,Robin Weekes,13,FALSE,Josh Cadbury
+Robin Weekes 9,M,Robin Weekes,13,FALSE,Joel Sellers
+Charlie Montgomery,F,Charlie Montgomery,L,TRUE,Charlie Montgomery
+Alice McCaughern,F,Charlie Montgomery,L,TRUE,Alice McCaughern
+Pip Davies,F,Charlie Montgomery,L,TRUE,Pip Davies
+Charlie Montgomery 1,F,Charlie Montgomery,9,FALSE,Isabel Roberts
+Charlie Montgomery 2,F,Charlie Montgomery,9,FALSE,Rosie Lloyd Davies
+Charlie Montgomery 3,F,Charlie Montgomery,9,FALSE,Trisha Salian
+Charlie Montgomery 4,F,Charlie Montgomery,9,FALSE,Tanishka Nongbet Salian
+Charlie Montgomery 5,F,Charlie Montgomery,9,FALSE,Allegra Sturgeon
+Charlie Montgomery 6,F,Charlie Montgomery,9,FALSE,Ellie Pereira
+Charlie Montgomery 7,F,Charlie Montgomery,9,FALSE,Mariia Babiichuk
+Charlie Montgomery 8,F,Charlie Montgomery,9,FALSE,Amalia Welbourn
+Charlie Montgomery 9,F,Charlie Montgomery,9,FALSE,Ellie Jones
+Alice Cornes,F,Alice Cornes,L,TRUE,Alice Cornes
+Tabby Hill,F,Alice Cornes,L,TRUE,Tabby Hill
+Hannah Shrives,F,Alice Cornes,L,TRUE,Hannah Shrives
+Alice Cornes 1,F,Alice Cornes,11,FALSE,Sarah Kiaer
+Alice Cornes 2,F,Alice Cornes,11,FALSE,Zoe Sellers
+Alice Cornes 3,F,Alice Cornes,11,FALSE,Talitha Smith
+Alice Cornes 4,F,Alice Cornes,11,FALSE,Bethia Smith
+Alice Cornes 5,F,Alice Cornes,11,FALSE,Amelie Buckler
+Alice Cornes 6,F,Alice Cornes,11,FALSE,Anna Bradley
+Alice Cornes 7,F,Alice Cornes,11,FALSE,Rosie Howard
+Alice Cornes 8,F,Alice Cornes,11,FALSE,Laura Nicholson
+Wendy Loy,F,Wendy Loy,L,TRUE,Wendy Loy
+Beks Pentland,F,Wendy Loy,L,TRUE,Beks Pentland
+Emily Williams,F,Wendy Loy,L,TRUE,Emily Williams
+Wendy Loy 1,F,Wendy Loy,11,FALSE,Joanna Anderson
+Wendy Loy 2,F,Wendy Loy,11,FALSE,Tilly Edgar
+Wendy Loy 3,F,Wendy Loy,11,FALSE,Luka Holliday
+Wendy Loy 4,F,Wendy Loy,11,FALSE,Anne Kiragu
+Wendy Loy 5,F,Wendy Loy,11,FALSE,Ruthie Lewis
+Wendy Loy 6,F,Wendy Loy,11,FALSE,Rosie Macmillan
+Wendy Loy 7,F,Wendy Loy,11,FALSE,Grace Roberts
+Sophie Cornes,F,Sophie Cornes,L,TRUE,Sophie Cornes
+Charlotte Bewes,F,Sophie Cornes,L,TRUE,Charlotte Bewes
+Paget Thomas,F,Sophie Cornes,L,TRUE,Paget Thomas
+Sophie Cornes 1,F,Sophie Cornes,12,FALSE,Brianna Howell
+Sophie Cornes 2,F,Sophie Cornes,12,FALSE,Lily Middleditch
+Sophie Cornes 3,F,Sophie Cornes,12,FALSE,Alice Montgomery
+Sophie Cornes 4,F,Sophie Cornes,12,FALSE,Lucy Pitman
+Sophie Cornes 5,F,Sophie Cornes,12,FALSE,Pippa Sanders
