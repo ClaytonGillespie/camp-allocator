@@ -1,172 +1,262 @@
 #%%
-import polars as pl
+#!/usr/bin/env python3
+"""
+Manual Allocation Scorer
+Scores a manual vehicle allocation using the same scoring system as the optimizer
+"""
 
-def score_allocation(car_assignments, driver_assignments, people_df, cars_df):
+import pandas as pd
+from collections import Counter
+
+# Scoring configuration constants (same as in optimizer)
+SCORE_WEIGHTS = {1: 1, 2: 4, 3: 9, 4: 16, 5: 25, 6: 36, 7: 49, 8: 64, 9: 81, 10: 100}
+SINGLE_DORM_BONUS = 20  # Bonus for single-dorm cars (not minibuses)
+GENDER_COHESION_BONUS = 10  # Bonus for single-gender mixed-dorm vehicles
+MIN_SIZE_2_PENALTY = 500  # Penalty for min group size of 2
+MIN_SIZE_1_PENALTY = 2000  # Penalty for min group size of 1
+
+
+def score_manual_allocation(allocation_df, people_df, vehicles_df=None):
     """
-    Score a transport allocation using the same criteria as the optimizer
+    Score a manual allocation using the same scoring system as the optimizer.
     
     Args:
-        car_assignments: dict {car: [list of passengers]}
-        driver_assignments: dict {car: driver_name}
-        people_df: polars DataFrame with people data
-        cars_df: polars DataFrame with car data
+        allocation_df: DataFrame with vehicle names as index, 'Driver' column, 
+                      and columns 0-16 containing passenger names (NaN for empty seats)
+                      Example:
+                          Index: 'Minibus (BG59 FDJ)'
+                          Columns: Driver='Martin Loy', 0='Martin Loy', 1='Person 2', ..., 16=NaN
+        people_df: DataFrame with columns ['Name', 'Dorm', 'Gender', 'Is Leader']
+        vehicles_df: DataFrame with vehicle information (optional)
     
     Returns:
-        dict with score breakdown and violations
+        Dictionary with detailed scoring breakdown
     """
-    
     # Create lookup dictionaries
-    camper_to_group = dict(zip(people_df.select('Name').to_series(), people_df.select('Dorm').to_series()))
-    camper_to_gender = dict(zip(people_df.select('Name').to_series(), people_df.select('Sex').to_series()))
-    car_to_capacity = dict(zip(cars_df.select('Surname & Car Reg').to_series(), 
-                              (cars_df.select('seats').to_series() - 1)))
+    people_to_dorm = dict(zip(people_df['Name'], people_df['Dorm']))
+    people_to_gender = {}
+    if 'Gender' in people_df.columns:
+        people_to_gender = dict(zip(people_df['Name'], people_df['Gender']))
     
-    groups = people_df.select('Dorm').unique().to_series().to_list()
-    leaders = people_df.filter(pl.col('Year') == "L").select('Name').to_series().to_list()
-    minibus_cars = cars_df.filter(pl.col('Surname & Car Reg').str.contains('Minibus')).select('Surname & Car Reg').to_series().to_list()
+    # Results storage
+    total_score = 0
+    vehicle_scores = {}
+    detailed_breakdown = []
     
-    score_breakdown = {
-        'base_score': 0,
-        'group_cohesion': 0,
-        'leader_preferences': 0,
-        'total_score': 0
-    }
+    # Metrics
+    total_people_allocated = 0
+    vehicles_with_size_1 = 0
+    vehicles_with_size_2 = 0
+    single_dorm_cars = 0
+    single_gender_mixed = 0
+    isolated_people = 0
     
-    violations = []
-    
-    # 1. BASE SCORE - 50 points per assigned person
-    total_passengers = sum(len(passengers) for passengers in car_assignments.values())
-    score_breakdown['base_score'] = total_passengers * 50
-    
-    # 2. GROUP COHESION SCORE - 10 points per person in groups together
-    for group in groups:
-        group_members = people_df.filter(pl.col('Dorm') == group).select('Name').to_series().to_list()
+    # Process each vehicle (row in the dataframe)
+    for vehicle in allocation_df.index:
+        row = allocation_df.loc[vehicle]
+        driver = row['Driver']
         
-        for car, passengers in car_assignments.items():
-            group_members_in_car = [p for p in passengers if p in group_members]
-            if len(group_members_in_car) > 0:
-                # Bonus for each person when they're with group members
-                score_breakdown['group_cohesion'] += len(group_members_in_car) * 10
-    
-    # 3. LEADER PREFERENCES - 15 points for each leader with group member
-    for leader in leaders:
-        if leader not in driver_assignments.values():  # Only if leader is passenger
-            leader_group = camper_to_group.get(leader)
-            if leader_group:
-                group_members = people_df.filter(pl.col('Dorm') == leader_group).select('Name').to_series().to_list()
-                
-                # Find which car the leader is in
-                leader_car = None
-                for car, passengers in car_assignments.items():
-                    if leader in passengers:
-                        leader_car = car
-                        break
-                
-                if leader_car:
-                    # Count group members in same car (excluding leader)
-                    group_members_in_car = [p for p in car_assignments[leader_car] 
-                                          if p in group_members and p != leader]
-                    score_breakdown['leader_preferences'] += len(group_members_in_car) * 15
-    
-    # 4. CHECK VIOLATIONS
-    
-    # Capacity violations
-    for car, passengers in car_assignments.items():
-        capacity = car_to_capacity.get(car, 0)
-        if len(passengers) > capacity:
-            violations.append(f"OVER CAPACITY: {car} has {len(passengers)} passengers, capacity {capacity}")
-    
-    # Driver/passenger conflicts
-    for car, driver in driver_assignments.items():
-        if car in car_assignments and driver in car_assignments[car]:
-            violations.append(f"DRIVER CONFLICT: {driver} is both driving and passenger in {car}")
-    
-    # Male driver with all female passengers
-    for car, driver in driver_assignments.items():
-        driver_gender = camper_to_gender.get(driver, 'Unknown')
-        if driver_gender == 'M' and car in car_assignments:
-            passengers = car_assignments[car]
-            male_passengers = [p for p in passengers if camper_to_gender.get(p) == 'M']
-            female_passengers = [p for p in passengers if camper_to_gender.get(p) == 'F']
+        # Collect passengers from columns 0-16, excluding NaN values
+        # The driver is already in the 'Driver' column, so we include them separately
+        passengers = [driver]  # Start with the driver
+        
+        for col in range(17):  # 0 to 16
+            if str(col) in row.index and pd.notna(row[str(col)]):
+                passengers.append(row[str(col)])
+        
+        if len(passengers) <= 1:  # Only driver, no other passengers
+            continue
             
-            if female_passengers and not male_passengers:
-                violations.append(f"GENDER MIXING: Male driver {driver} with only female passengers in {car}")
+        # Count people by dorm
+        dorm_counts = Counter(people_to_dorm.get(p, 'Unknown') for p in passengers)
+        
+        # Calculate minimum group size
+        min_group_size = min(dorm_counts.values()) if dorm_counts else 0
+        
+        # Base score from minimum group size
+        vehicle_score = SCORE_WEIGHTS.get(min_group_size, min_group_size * min_group_size)
+        
+        # Track penalties
+        penalties = []
+        bonuses = []
+        
+        # Apply penalties for small group sizes
+        if min_group_size == 1:
+            vehicle_score -= MIN_SIZE_1_PENALTY
+            vehicles_with_size_1 += 1
+            penalties.append(f"Min size 1: -{MIN_SIZE_1_PENALTY}")
+            isolated_people += sum(1 for count in dorm_counts.values() if count == 1)
+        elif min_group_size == 2:
+            vehicle_score -= MIN_SIZE_2_PENALTY
+            vehicles_with_size_2 += 1
+            penalties.append(f"Min size 2: -{MIN_SIZE_2_PENALTY}")
+            isolated_people += sum(1 for count in dorm_counts.values() if count == 1)
+        else:
+            isolated_people += sum(1 for count in dorm_counts.values() if count == 1)
+        
+        # Single dorm bonus (cars only)
+        is_single_dorm = len(dorm_counts) == 1
+        if is_single_dorm and 'Minibus' not in vehicle:
+            vehicle_score += SINGLE_DORM_BONUS
+            single_dorm_cars += 1
+            bonuses.append(f"Single dorm car: +{SINGLE_DORM_BONUS}")
+        
+        # Gender cohesion bonus
+        if people_to_gender and len(dorm_counts) > 1:
+            gender_counts = Counter(people_to_gender.get(p, 'Unknown') for p in passengers)
+            if len(gender_counts) == 1 and 'Unknown' not in gender_counts:
+                vehicle_score += GENDER_COHESION_BONUS
+                single_gender_mixed += 1
+                bonuses.append(f"Gender cohesion: +{GENDER_COHESION_BONUS}")
+        
+        # Count leaders
+        leaders = [p for p in passengers if people_df[people_df['Name'] == p]['Is Leader'].values[0]]
+        
+        # Store detailed info
+        vehicle_info = {
+            'vehicle': vehicle,
+            'driver': driver,
+            'passengers': len(passengers),
+            'leaders': len(leaders),
+            'min_group_size': min_group_size,
+            'base_score': SCORE_WEIGHTS.get(min_group_size, min_group_size * min_group_size),
+            'bonuses': bonuses,
+            'penalties': penalties,
+            'final_score': vehicle_score,
+            'dorm_breakdown': dict(dorm_counts),
+            'is_single_dorm': is_single_dorm,
+            'is_minibus': 'Minibus' in vehicle
+        }
+        
+        # Check minibus leader requirement
+        if 'Minibus' in vehicle and len(leaders) < 2:
+            vehicle_info['warning'] = f"Minibus has only {len(leaders)} leader(s), needs 2+"
+        
+        detailed_breakdown.append(vehicle_info)
+        vehicle_scores[(vehicle, driver)] = vehicle_score
+        total_score += vehicle_score
+        total_people_allocated += len(passengers)
     
-    # Minibus leader requirements
-    for car in minibus_cars:
-        if car in car_assignments:
-            passengers = car_assignments[car]
-            leaders_in_car = [p for p in passengers if p in leaders]
-            if len(leaders_in_car) < 2:
-                violations.append(f"MINIBUS LEADERS: {car} has only {len(leaders_in_car)} leaders, needs 2+")
-    
-    # Check all campers assigned
-    all_campers = people_df.select('Name').to_series().to_list()
-    assigned_campers = set()
-    for passengers in car_assignments.values():
-        assigned_campers.update(passengers)
-    for driver in driver_assignments.values():
-        assigned_campers.add(driver)
-    
-    unassigned = [c for c in all_campers if c not in assigned_campers]
-    if unassigned:
-        violations.append(f"UNASSIGNED: {len(unassigned)} people not assigned: {', '.join(unassigned[:5])}")
-    
-    # Calculate total score (subtract penalty for violations)
-    violation_penalty = len(violations) * 100  # 100 point penalty per violation
-    score_breakdown['total_score'] = (score_breakdown['base_score'] + 
-                                     score_breakdown['group_cohesion'] + 
-                                     score_breakdown['leader_preferences'] - 
-                                     violation_penalty)
+    # Summary
+    summary = {
+        'total_score': total_score,
+        'vehicles_used': len(allocation_df),
+        'people_allocated': total_people_allocated,
+        'vehicles_with_size_1': vehicles_with_size_1,
+        'vehicles_with_size_2': vehicles_with_size_2,
+        'isolated_people': isolated_people,
+        'single_dorm_cars': single_dorm_cars,
+        'single_gender_mixed_dorms': single_gender_mixed,
+        'average_score_per_vehicle': total_score / len(allocation_df) if len(allocation_df) > 0 else 0
+    }
     
     return {
-        'score_breakdown': score_breakdown,
-        'violations': violations,
-        'total_passengers': total_passengers,
-        'cars_used': len([car for car, passengers in car_assignments.items() if passengers]),
-        'violation_penalty': violation_penalty
+        'summary': summary,
+        'vehicle_scores': vehicle_scores,
+        'detailed_breakdown': detailed_breakdown
     }
 
-def print_score_report(result):
-    """Print a nice formatted report of the scoring"""
-    print("=" * 60)
-    print("TRANSPORT ALLOCATION SCORING REPORT")
-    print("=" * 60)
+
+def print_scoring_report(scoring_result):
+    """Print a nicely formatted scoring report."""
+    summary = scoring_result['summary']
+    breakdown = scoring_result['detailed_breakdown']
     
-    print(f"\n📊 SCORE BREAKDOWN:")
-    print(f"  Base assignment score: {result['score_breakdown']['base_score']:,} points")
-    print(f"  Group cohesion bonus:  {result['score_breakdown']['group_cohesion']:,} points")
-    print(f"  Leader preference bonus: {result['score_breakdown']['leader_preferences']:,} points")
+    print("\n" + "="*60)
+    print("ALLOCATION SCORING REPORT")
+    print("="*60)
     
-    if result['violation_penalty'] > 0:
-        print(f"  Violation penalty:     -{result['violation_penalty']:,} points")
+    print("\nSCORING RULES:")
+    print(f"  Min group sizes: 1→{SCORE_WEIGHTS[1]}pt, 2→{SCORE_WEIGHTS[2]}pts, 3→{SCORE_WEIGHTS[3]}pts, 4→{SCORE_WEIGHTS[4]}pts, 5→{SCORE_WEIGHTS[5]}pts, etc.")
+    print(f"  Single-dorm bonus: {SINGLE_DORM_BONUS}pts per car (not minibuses)")
+    print(f"  Gender cohesion bonus: {GENDER_COHESION_BONUS}pts for mixed-dorm vehicles with single gender")
+    print(f"  Group size penalties: -{MIN_SIZE_2_PENALTY}pts for size 2, -{MIN_SIZE_1_PENALTY}pts for size 1")
     
-    print(f"  ─" * 30)
-    print(f"  TOTAL SCORE:          {result['score_breakdown']['total_score']:,} points")
+    print("\nSUMMARY:")
+    print(f"  Total Score: {summary['total_score']}")
+    print(f"  Vehicles Used: {summary['vehicles_used']}")
+    print(f"  People Allocated: {summary['people_allocated']}")
+    print(f"  Average Score per Vehicle: {summary['average_score_per_vehicle']:.1f}")
     
-    print(f"\n📋 SUMMARY:")
-    print(f"  Passengers assigned: {result['total_passengers']}")
-    print(f"  Cars used: {result['cars_used']}")
-    print(f"  Violations: {len(result['violations'])}")
+    if summary['vehicles_with_size_1'] > 0:
+        print(f"  ⚠️  Vehicles with isolated people (size 1): {summary['vehicles_with_size_1']}")
+    if summary['vehicles_with_size_2'] > 0:
+        print(f"  ⚠️  Vehicles with min size 2: {summary['vehicles_with_size_2']}")
     
-    if result['violations']:
-        print(f"\n❌ VIOLATIONS FOUND:")
-        for violation in result['violations']:
-            print(f"  - {violation}")
-    else:
-        print(f"\n✅ NO VIOLATIONS - Perfect allocation!")
+    print(f"  Single-dorm cars: {summary['single_dorm_cars']}")
+    print(f"  Single-gender mixed-dorm vehicles: {summary['single_gender_mixed_dorms']}")
+    print(f"  Total isolated people: {summary['isolated_people']}")
     
-    print("=" * 60)
+    print("\n" + "-"*60)
+    print("VEHICLE BREAKDOWN:")
+    print("-"*60)
+    
+    # Sort by score (worst first to highlight problems)
+    sorted_vehicles = sorted(breakdown, key=lambda x: x['final_score'])
+    
+    for v in sorted_vehicles:
+        print(f"\n{v['vehicle']} (Driver: {v['driver']})")
+        print(f"  Passengers: {v['passengers']}, Leaders: {v['leaders']}")
+        print(f"  Min group size: {v['min_group_size']} → Base score: {v['base_score']}")
+        
+        if v['bonuses']:
+            print(f"  Bonuses: {', '.join(v['bonuses'])}")
+        if v['penalties']:
+            print(f"  Penalties: {', '.join(v['penalties'])}")
+        
+        print(f"  Final score: {v['final_score']} points")
+        
+        # Dorm breakdown
+        print(f"  Dorms: ", end="")
+        dorm_strs = [f"{dorm}:{count}" for dorm, count in sorted(v['dorm_breakdown'].items(), key=lambda x: -x[1])]
+        print(", ".join(dorm_strs))
+        
+        if 'warning' in v:
+            print(f"  ⚠️  {v['warning']}")
+
+
+def convert_optimizer_output_to_dataframe(allocation_dict, vehicles_df):
+    """
+    Convert optimizer output format to the DataFrame format expected by the scorer.
+    
+    Args:
+        allocation_dict: Dictionary from optimizer {(vehicle, driver): [passengers]}
+        vehicles_df: DataFrame with vehicle capacities
+    
+    Returns:
+        DataFrame with vehicle as index, Driver column, and columns 0-16
+    """
+    rows = []
+    
+    for (vehicle, driver), passengers in allocation_dict.items():
+        # Create row data
+        row_data = {'Driver': driver}
+        
+        # Fill passenger columns (driver is not in passengers list for this format)
+        # Remove driver from passengers list if present
+        passenger_list = [p for p in passengers if p != driver]
+        
+        for i in range(17):
+            if i < len(passenger_list):
+                row_data[str(i)] = passenger_list[i]
+            else:
+                row_data[str(i)] = None
+        
+        rows.append((vehicle, row_data))
+    
+    # Create DataFrame
+    df = pd.DataFrame.from_dict(dict(rows), orient='index')
+    
+    # Ensure all columns exist in the right order
+    columns = ['Driver'] + [str(i) for i in range(17)]
+    df = df[columns]
+    
+    return df
 
 #%% Load your data
-not_going = ['Eleanor Clarke','Anthony Bewes']
-people = pl.read_csv("data/people.csv"
-            ).filter(
-                pl.col('Name').is_in(not_going).not_()
-            )
-cars_df = pl.scan_csv('data/cars.csv').with_columns(
-    (pl.col('3-point belts (excluding driver)') + 1).alias('seats')
-).collect()
+# not_going = ['Eleanor Clarke','Anthony Bewes']
+people_df = pd.read_csv('./data/campers.csv')
+vehicles_df = pd.read_csv('./data/cars.csv')
 
 car_assignments = {
     'Minibus (HX70 BXB)':['Tom Gardner'
@@ -282,10 +372,10 @@ driver_assignments= {
 }
 
 #%%
-import pandas as pd
+
 ca_df = pd.DataFrame.from_dict(car_assignments,orient='index')
 
-replace_df = pd.read_csv('data/people_v2.csv')[['Name','Real Name']]
+replace_df = pd.read_csv('data/campers.csv')[['Name','Real Name']]
 replace_dict = {}
 for row in replace_df.iterrows():
     replace_dict[row[1][1]] = row[1][0]
@@ -298,13 +388,17 @@ da_df = pd.DataFrame.from_dict(driver_assignments,orient='index',columns=['Drive
 
 final = ca_df.join(da_df)
 final = final[['Driver'] + final.columns[:-1].tolist()]
-final
+final.to_csv('manual.csv')
 
 #%%
 
 # Score the allocation
-result = score_allocation(car_assignments, driver_assignments, people, cars_df)
-print_score_report(result)
+allocation_df = pd.read_csv('manual.csv', index_col=0)
+people_df = pd.read_csv('./data/campers.csv')
+vehicles_df = pd.read_csv('./data/cars.csv')
+
+result = score_manual_allocation(allocation_df, people_df,vehicles_df)
+print_scoring_report(result)
 
 #%%
 # people = pl.read_csv("data/people.csv").with_columns(pl.when(pl.col('Year')=="L").then(True).otherwise(False).alias('Is Leader'))
