@@ -1,0 +1,37 @@
+# Sensitive data mappings
+name_mapping.json
+license_mapping.json
+
+# PDF documents containing real data
+data/people_anon.pdf
+*.pdf
+
+# Generated output files with real data (but keep example anonymized ones)
+# *_allocation_detailed.csv
+# *_allocation_summary.csv
+# final.csv
+# manual.csv
+
+# Python cache and environments
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

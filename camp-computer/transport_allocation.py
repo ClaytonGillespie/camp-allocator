@@ -12,7 +12,7 @@ import time
 import sys
 
 # Scoring configuration constants
-SCORE_WEIGHTS = {1: 1, 2: 4, 3: 9, 4: 16, 5: 25, 6: 36, 7: 49, 8: 64, 9: 81, 10: 100}
+SCORE_WEIGHTS = {1: 1, 2: 8, 3: 27, 4: 64, 5: 125, 6: 216, 7: 250, 8: 250, 9: 250, 10: 250}
 SINGLE_DORM_BONUS = 20  # Bonus for single-dorm cars (not minibuses)
 GENDER_COHESION_BONUS = 10  # Bonus for single-gender mixed-dorm vehicles
 MIN_SIZE_2_PENALTY = 500  # Penalty for min group size of 2
@@ -47,14 +47,14 @@ class CampVehicleAllocatorILP:
             # Create people dictionary
             self.people = dict(zip(self.people_df['Name'], self.people_df['Dorm']))
             
-            # Check if Gender column exists
-            if 'Gender' in self.people_df.columns:
-                self.people_gender = dict(zip(self.people_df['Name'], self.people_df['Gender']))
-                gender_counts = self.people_df['Gender'].value_counts()
+            # Check if Sex column exists
+            if 'Sex' in self.people_df.columns:
+                self.people_gender = dict(zip(self.people_df['Name'], self.people_df['Sex']))
+                gender_counts = self.people_df['Sex'].value_counts()
                 print(f"  Gender breakdown: {', '.join([f'{g}: {c}' for g, c in gender_counts.items()])}")
             else:
                 self.people_gender = {}
-                print("  ⚠️  No 'Gender' column found - gender cohesion will not be considered")
+                print("  ⚠️  No 'Sex' column found - gender cohesion will not be considered")
             
             # Load vehicles
             self.vehicles_df = pd.read_csv(vehicles_csv)
@@ -913,7 +913,7 @@ class CampVehicleAllocatorILP:
         self.get_summary_stats()
         
         # Solve with ILP
-        allocation, model = self.solve_ilp_allocation(time_limit=300)
+        allocation, model = self.solve_ilp_allocation(time_limit=1800)
         
         # Print solution
         self.print_ilp_solution(allocation)
