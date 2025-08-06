@@ -564,8 +564,8 @@ class CampVehicleAllocatorILP:
         print(f"\nSolving (this may take up to {time_limit} seconds)...")
         
         # Solve with time limit and optimality gap
-        # Set randomSeed for consistent results across runs
-        solver = pulp.PULP_CBC_CMD(msg=1, timeLimit=time_limit, gapRel=0.01, randomSeed=42)
+        # Use tighter optimality gap for more consistent results
+        solver = pulp.PULP_CBC_CMD(msg=1, timeLimit=time_limit, gapRel=0.001)
         model.solve(solver)
         
         solve_time = time.time() - start_time
@@ -851,7 +851,7 @@ class CampVehicleAllocatorILP:
             'capacity_utilization': capacity_util
         }
     
-    def export_results(self, allocation, prefix="ilp_allocation"):
+    def export_results(self, allocation, prefix="best_allocation"):
         """Export allocation to CSV files."""
         if not allocation:
             print("\n❌ No allocation to export!")

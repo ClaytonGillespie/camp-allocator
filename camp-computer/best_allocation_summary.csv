@@ -1,0 +1,14 @@
+Vehicle,Driver,Type,Capacity,Passengers,Utilization_%,Min_Group_Size,Num_Dorms,Primary_Dorm,Dorm_Details
+Minibus (NO78 PQR),Kevin Johnson,Minibus,17,16,94.1,6,2,Kevin Johnson,"Kevin Johnson:10, Rachel Green:6"
+Minibus (ST90 UVW),Tyler Jackson,Minibus,17,14,82.4,6,2,Tyler Jackson,"Nathan Miller:6, Tyler Jackson:8"
+Minibus (XY12 ZAB),James Anderson,Minibus,17,16,94.1,7,2,James Anderson,"Emma Roberts:7, James Anderson:9"
+Adams (TU90 VWX),Nicole Adams,Car,5,5,100.0,5,1,Nicole Adams,Nicole Adams:5
+Brown (KL56 MNO),Sam Brown,Car,5,4,80.0,4,1,Nathan Miller,Nathan Miller:4
+Clark (PQ78 RST),Eric Clark,Car,5,5,100.0,5,1,Tyler Jackson,Tyler Jackson:5
+Collins (WOLF),Maya Collins,Car,5,5,100.0,5,1,Maya Collins,Maya Collins:5
+Evans (UV90 WXY),Chloe Evans,Car,7,6,85.7,3,2,Maya Collins,"Maya Collins:3, Nicole Adams:3"
+Johnson (ZA12 BCD),Emma Roberts,Car,5,5,100.0,5,1,Emma Roberts,Emma Roberts:5
+Phillips (IJ56 KLM),Zoe Phillips,Car,5,3,60.0,3,1,Maya Collins,Maya Collins:3
+Rodriguez (FG34 HIJ),Mike Rodriguez,Car,5,5,100.0,5,1,Alex Thompson,Alex Thompson:5
+Thompson (EF34 GHI),Rachel Green,Car,5,4,80.0,4,1,Rachel Green,Rachel Green:4
+Wilson (OP78 QRS),David Wilson,Car,5,5,100.0,5,1,Alex Thompson,Alex Thompson:5
