@@ -564,7 +564,8 @@ class CampVehicleAllocatorILP:
         print(f"\nSolving (this may take up to {time_limit} seconds)...")
         
         # Solve with time limit and optimality gap
-        solver = pulp.PULP_CBC_CMD(msg=1, timeLimit=time_limit, gapRel=0.01)
+        # Set randomSeed for consistent results across runs
+        solver = pulp.PULP_CBC_CMD(msg=1, timeLimit=time_limit, gapRel=0.01, randomSeed=42)
         model.solve(solver)
         
         solve_time = time.time() - start_time

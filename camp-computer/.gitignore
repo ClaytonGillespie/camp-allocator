@@ -10,7 +10,10 @@ data/people_anon.pdf
 # *_allocation_detailed.csv
 # *_allocation_summary.csv
 # final.csv
-# manual.csv
+
+# manual comparison (just for local development)
+manual.csv
+manual_allocation.py
 
 # Python cache and environments
 __pycache__/
